@@ -1,0 +1,498 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<section class="dashboard-hero mb-5">
+
+    <div>
+
+        <span class="section-label">
+            PUBLIC KEY INFRASTRUCTURE
+        </span>
+
+        <h1 class="display-5 fw-bold mt-2">
+            Certificate Trust & Verification
+        </h1>
+
+        <p class="lead text-secondary dashboard-intro">
+            A working PKI environment for issuing X.509 certificates,
+            validating trust chains, publishing signed CRLs and
+            demonstrating certificate-security failures.
+        </p>
+
+    </div>
+
+    <div class="system-state">
+
+        {% if root and intermediate %}
+
+        <span class="system-dot system-online"></span>
+
+        <div>
+            <strong>PKI Operational</strong>
+            <small>
+                Root and Intermediate CA available
+            </small>
+        </div>
+
+        {% else %}
+
+        <span class="system-dot system-warning"></span>
+
+        <div>
+            <strong>PKI Setup Required</strong>
+            <small>
+                Certificate hierarchy is incomplete
+            </small>
+        </div>
+
+        {% endif %}
+
+    </div>
+
+</section>
+
+
+<div class="row g-3 mb-5">
+
+    <div class="col-6 col-lg">
+
+        <div class="metric-card">
+
+            <span>Certificate Authorities</span>
+
+            <strong>
+                {{ data.ca_count }}
+            </strong>
+
+            <small>
+                Root + Intermediate
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-6 col-lg">
+
+        <div class="metric-card">
+
+            <span>Issued Certificates</span>
+
+            <strong>
+                {{ data.certificate_count }}
+            </strong>
+
+            <small>
+                Server + User
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-6 col-lg">
+
+        <div class="metric-card">
+
+            <span>Active</span>
+
+            <strong class="text-success">
+                {{ data.active_count }}
+            </strong>
+
+            <small>
+                Not revoked
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-6 col-lg">
+
+        <div class="metric-card">
+
+            <span>Revoked</span>
+
+            <strong class="text-danger">
+                {{ data.revoked_count }}
+            </strong>
+
+            <small>
+                Published through CRL
+            </small>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-6 col-lg">
+
+        <div class="metric-card">
+
+            <span>Verifications</span>
+
+            <strong>
+                {{ data.verification_count }}
+            </strong>
+
+            <small>
+                Recorded decisions
+            </small>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<section class="pki-section mb-5">
+
+    <div class="d-flex flex-column flex-md-row
+                justify-content-between
+                align-items-md-end gap-3 mb-4">
+
+        <div>
+
+            <span class="section-label">
+                LIVE PKI HIERARCHY
+            </span>
+
+            <h2 class="mt-2 mb-1">
+                Chain of Trust
+            </h2>
+
+            <p class="text-secondary mb-0">
+                Trust begins at the Root CA and flows through
+                the Intermediate CA to end-entity certificates.
+            </p>
+
+        </div>
+
+        <a
+            href="{{ url_for('main.certificate_authorities') }}"
+            class="btn btn-sm btn-outline-dark"
+        >
+            Inspect CAs
+        </a>
+
+    </div>
+
+
+    <div class="trust-chain">
+
+        <div class="trust-node root">
+
+            <span class="node-type">
+                TRUST ANCHOR
+            </span>
+
+            <strong>
+                Root CA
+            </strong>
+
+            {% if root %}
+            <small>
+                {{ root.common_name }}
+            </small>
+
+            <span class="mini-status trusted">
+                TRUSTED
+            </span>
+            {% else %}
+            <small>Not created</small>
+            {% endif %}
+
+        </div>
+
+
+        <div class="trust-connector">
+
+            <span>↓</span>
+            <small>RSA / SHA-256 SIGNATURE</small>
+
+        </div>
+
+
+        <div class="trust-node intermediate">
+
+            <span class="node-type">
+                ISSUING AUTHORITY
+            </span>
+
+            <strong>
+                Intermediate CA
+            </strong>
+
+            {% if intermediate %}
+            <small>
+                {{ intermediate.common_name }}
+            </small>
+
+            <span class="mini-status active">
+                ACTIVE
+            </span>
+            {% else %}
+            <small>Not created</small>
+            {% endif %}
+
+        </div>
+
+
+        <div class="trust-connector">
+
+            <span>↓</span>
+            <small>ISSUES & SIGNS</small>
+
+        </div>
+
+
+        <div class="trust-node certificate">
+
+            <span class="node-type">
+                END ENTITY
+            </span>
+
+            <strong>
+                Certificates
+            </strong>
+
+            <small>
+                {{ data.certificate_count }}
+                issued certificate(s)
+            </small>
+
+        </div>
+
+    </div>
+
+</section>
+
+
+<div class="row g-4 mb-5">
+
+    <div class="col-lg-6">
+
+        <div class="pki-card h-100">
+
+            <div class="d-flex justify-content-between mb-4">
+
+                <div>
+
+                    <span class="section-label">
+                        RECENT CERTIFICATES
+                    </span>
+
+                    <h4 class="mt-2">
+                        Certificate Inventory
+                    </h4>
+
+                </div>
+
+                <a
+                    href="{{ url_for('main.issue_certificate') }}"
+                    class="small"
+                >
+                    View all
+                </a>
+
+            </div>
+
+
+            {% if data.recent_certificates %}
+
+                {% for cert in data.recent_certificates %}
+
+                <div class="activity-row">
+
+                    <div>
+
+                        <strong>
+                            {{ cert.common_name }}
+                        </strong>
+
+                        <small>
+                            {{ cert.certificate_type }}
+                        </small>
+
+                    </div>
+
+
+                    {% if cert.status == "REVOKED" %}
+
+                    <span class="mini-status revoked">
+                        REVOKED
+                    </span>
+
+                    {% else %}
+
+                    <span class="mini-status active">
+                        ACTIVE
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+            <p class="text-secondary">
+                No certificates have been issued.
+            </p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-6">
+
+        <div class="pki-card h-100">
+
+            <div class="d-flex justify-content-between mb-4">
+
+                <div>
+
+                    <span class="section-label">
+                        VERIFICATION ACTIVITY
+                    </span>
+
+                    <h4 class="mt-2">
+                        Recent Decisions
+                    </h4>
+
+                </div>
+
+                <a
+                    href="{{ url_for('main.verify_certificate') }}"
+                    class="small"
+                >
+                    Verify
+                </a>
+
+            </div>
+
+
+            {% if data.recent_verifications %}
+
+                {% for item in data.recent_verifications %}
+
+                <div class="activity-row">
+
+                    <div>
+
+                        <strong>
+                            {{ item.common_name or "Certificate" }}
+                        </strong>
+
+                        <small>
+                            {{ item.verified_at }}
+                        </small>
+
+                    </div>
+
+
+                    {% if item.final_result == "TRUSTED" %}
+
+                    <span class="mini-status trusted">
+                        TRUSTED
+                    </span>
+
+                    {% elif item.final_result == "REVOKED" %}
+
+                    <span class="mini-status revoked">
+                        REVOKED
+                    </span>
+
+                    {% else %}
+
+                    <span class="mini-status warning">
+                        {{ item.final_result }}
+                    </span>
+
+                    {% endif %}
+
+                </div>
+
+                {% endfor %}
+
+            {% else %}
+
+            <p class="text-secondary">
+                No verification decisions recorded.
+            </p>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+
+<section class="pki-section">
+
+    <span class="section-label">
+        VERIFICATION PIPELINE
+    </span>
+
+    <h2 class="mt-2">
+        How trust is decided
+    </h2>
+
+    <p class="text-secondary mb-4">
+        A valid signature alone does not make a certificate trusted.
+        Every stage contributes to the final decision.
+    </p>
+
+
+    <div class="pipeline-grid">
+
+        {% set stages = [
+            ("01", "Parse", "Valid X.509 structure"),
+            ("02", "Validity", "Check certificate dates"),
+            ("03", "Signature", "Verify issuer signature"),
+            ("04", "Issuer", "Build certificate chain"),
+            ("05", "CA Permission", "Check CA constraints"),
+            ("06", "Root Trust", "Locate trusted anchor"),
+            ("07", "CRL", "Verify revocation list"),
+            ("08", "Decision", "TRUSTED or rejected")
+        ] %}
+
+
+        {% for number, title, description in stages %}
+
+        <div class="pipeline-stage">
+
+            <span>
+                {{ number }}
+            </span>
+
+            <strong>
+                {{ title }}
+            </strong>
+
+            <small>
+                {{ description }}
+            </small>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+</section>
+
+{% endblock %}

@@ -1,0 +1,5 @@
+Flask
+cryptography
+mysql-connector-python
+python-dotenv
+pytest

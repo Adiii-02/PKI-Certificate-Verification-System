@@ -1,0 +1,323 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-heading">
+    <span class="section-label">
+        PKI HIERARCHY
+    </span>
+
+    <h1>Certificate Authorities</h1>
+
+    <p>
+        Establish the Root trust anchor and the Intermediate
+        Certificate Authority used to issue end-entity certificates.
+    </p>
+</div>
+
+
+{% if not root %}
+
+<div class="empty-state mb-4">
+
+    <div class="empty-icon">ROOT</div>
+
+    <h3>Create Root Certificate Authority</h3>
+
+    <p>
+        Generate a 2048-bit RSA key and a self-signed X.509 Root CA
+        certificate. The Root CA becomes the local PKI trust anchor.
+    </p>
+
+    <form
+        method="POST"
+        action="{{ url_for('main.create_root') }}"
+    >
+        <button
+            class="btn btn-primary"
+            type="submit"
+        >
+            Create Root CA
+        </button>
+    </form>
+
+</div>
+
+{% else %}
+
+<div class="pki-card mb-4">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+
+        <div>
+            <span class="section-label">
+                TRUST ANCHOR
+            </span>
+
+            <h3 class="mt-2 mb-1">
+                {{ root.common_name }}
+            </h3>
+        </div>
+
+        <span class="status-badge status-trusted">
+            TRUSTED ROOT
+        </span>
+
+    </div>
+
+
+    <div class="certificate-details">
+
+        <div>
+            <span>Certificate Type</span>
+            <strong>Root CA</strong>
+        </div>
+
+        <div>
+            <span>RSA Key Size</span>
+            <strong>{{ root_details.key_size }} bits</strong>
+        </div>
+
+        <div>
+            <span>Signature Algorithm</span>
+            <strong>
+                {{ root_details.signature_algorithm }}
+                with RSA
+            </strong>
+        </div>
+
+        <div>
+            <span>Serial Number</span>
+            <strong class="break-value">
+                {{ root_details.serial_number }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Valid From</span>
+            <strong>{{ root_details.valid_from }}</strong>
+        </div>
+
+        <div>
+            <span>Valid Until</span>
+            <strong>{{ root_details.valid_until }}</strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>Subject</span>
+            <strong class="break-value">
+                {{ root_details.subject }}
+            </strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>Issuer</span>
+            <strong class="break-value">
+                {{ root_details.issuer }}
+            </strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>SHA-256 Fingerprint</span>
+            <strong class="break-value fingerprint">
+                {{ root_details.fingerprint }}
+            </strong>
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% if root and not intermediate %}
+
+<div class="empty-state mb-4">
+
+    <div class="empty-icon">INT</div>
+
+    <h3>Create Intermediate Certificate Authority</h3>
+
+    <p>
+        Generate another RSA key and create an Intermediate CA
+        certificate signed by the Root CA.
+    </p>
+
+    <form
+        method="POST"
+        action="{{ url_for('main.create_intermediate') }}"
+    >
+        <button
+            class="btn btn-primary"
+            type="submit"
+        >
+            Create Intermediate CA
+        </button>
+    </form>
+
+</div>
+
+{% endif %}
+
+
+{% if intermediate %}
+
+<div class="pki-card mb-4">
+
+    <div class="d-flex justify-content-between align-items-start mb-3">
+
+        <div>
+            <span class="section-label">
+                ISSUING AUTHORITY
+            </span>
+
+            <h3 class="mt-2 mb-1">
+                {{ intermediate.common_name }}
+            </h3>
+        </div>
+
+        <span class="status-badge status-active">
+            ACTIVE CA
+        </span>
+
+    </div>
+
+
+    <div class="certificate-details">
+
+        <div>
+            <span>Certificate Type</span>
+            <strong>Intermediate CA</strong>
+        </div>
+
+        <div>
+            <span>RSA Key Size</span>
+            <strong>
+                {{ intermediate_details.key_size }} bits
+            </strong>
+        </div>
+
+        <div>
+            <span>Signature Algorithm</span>
+            <strong>
+                {{ intermediate_details.signature_algorithm }}
+                with RSA
+            </strong>
+        </div>
+
+        <div>
+            <span>Serial Number</span>
+            <strong class="break-value">
+                {{ intermediate_details.serial_number }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Valid From</span>
+            <strong>
+                {{ intermediate_details.valid_from }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Valid Until</span>
+            <strong>
+                {{ intermediate_details.valid_until }}
+            </strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>Subject</span>
+            <strong class="break-value">
+                {{ intermediate_details.subject }}
+            </strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>Issuer</span>
+            <strong class="break-value">
+                {{ intermediate_details.issuer }}
+            </strong>
+        </div>
+
+        <div class="detail-wide">
+            <span>SHA-256 Fingerprint</span>
+            <strong class="break-value fingerprint">
+                {{ intermediate_details.fingerprint }}
+            </strong>
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% if root and intermediate %}
+
+<section class="pki-section mt-4">
+
+    <span class="section-label">
+        ACTIVE TRUST HIERARCHY
+    </span>
+
+    <h2 class="mt-2 mb-4">
+        PKI Chain
+    </h2>
+
+
+    <div class="hierarchy">
+
+        <div class="hierarchy-node root-node">
+            <small>TRUST ANCHOR</small>
+
+            <strong>Root CA</strong>
+
+            <span>
+                Self-signed
+            </span>
+        </div>
+
+
+        <div class="hierarchy-arrow">
+            <span>↓</span>
+            <small>SIGNED</small>
+        </div>
+
+
+        <div class="hierarchy-node">
+            <small>ISSUING AUTHORITY</small>
+
+            <strong>Intermediate CA</strong>
+
+            <span>
+                Root-signed
+            </span>
+        </div>
+
+
+        <div class="hierarchy-arrow">
+            <span>↓</span>
+            <small>WILL ISSUE</small>
+        </div>
+
+
+        <div class="hierarchy-node pending-node">
+            <small>END ENTITY</small>
+
+            <strong>Certificate</strong>
+
+            <span>
+                Step 5
+            </span>
+        </div>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

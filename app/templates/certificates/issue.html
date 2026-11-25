@@ -1,0 +1,324 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-heading">
+    <span class="section-label">
+        CERTIFICATE ISSUANCE
+    </span>
+
+    <h1>Issue Certificate</h1>
+
+    <p>
+        Issue a real X.509 server or user certificate signed
+        by the Intermediate Certificate Authority.
+    </p>
+</div>
+
+
+{% if not intermediate %}
+
+<div class="alert alert-warning">
+    The Intermediate CA has not been created.
+    Create the PKI hierarchy before issuing certificates.
+</div>
+
+<a
+    href="{{ url_for('main.certificate_authorities') }}"
+    class="btn btn-primary"
+>
+    Open Certificate Authorities
+</a>
+
+{% else %}
+
+<div class="row g-4">
+
+    <div class="col-lg-5">
+
+        <div class="pki-card">
+
+            <span class="section-label">
+                NEW CERTIFICATE
+            </span>
+
+            <h3 class="mt-2 mb-4">
+                Certificate Request
+            </h3>
+
+
+            <form method="POST">
+
+                <div class="mb-3">
+
+                    <label
+                        for="certificate_type"
+                        class="form-label"
+                    >
+                        Certificate Type
+                    </label>
+
+                    <select
+                        class="form-select"
+                        id="certificate_type"
+                        name="certificate_type"
+                        required
+                    >
+                        <option value="SERVER">
+                            Server Certificate
+                        </option>
+
+                        <option value="USER">
+                            User Certificate
+                        </option>
+                    </select>
+
+                </div>
+
+
+                <div class="mb-3">
+
+                    <label
+                        for="common_name"
+                        class="form-label"
+                    >
+                        Common Name
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="common_name"
+                        name="common_name"
+                        maxlength="100"
+                        placeholder="server.local"
+                        required
+                    >
+
+                    <div class="form-text">
+                        Certificate subject Common Name.
+                    </div>
+
+                </div>
+
+
+                <div
+                    class="mb-4"
+                    id="dnsField"
+                >
+
+                    <label
+                        for="dns_name"
+                        class="form-label"
+                    >
+                        DNS Name / SAN
+                    </label>
+
+                    <input
+                        type="text"
+                        class="form-control"
+                        id="dns_name"
+                        name="dns_name"
+                        maxlength="253"
+                        placeholder="server.local"
+                    >
+
+                    <div class="form-text">
+                        Added to the server certificate as a
+                        Subject Alternative Name.
+                    </div>
+
+                </div>
+
+
+                <div class="issuance-summary mb-4">
+
+                    <div>
+                        <span>Issuer</span>
+                        <strong>
+                            {{ intermediate.common_name }}
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Key</span>
+                        <strong>
+                            RSA 2048-bit
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Signature</span>
+                        <strong>
+                            SHA-256 with RSA
+                        </strong>
+                    </div>
+
+                    <div>
+                        <span>Validity</span>
+                        <strong>
+                            365 days
+                        </strong>
+                    </div>
+
+                </div>
+
+
+                <button
+                    type="submit"
+                    class="btn btn-primary w-100"
+                >
+                    Issue Certificate
+                </button>
+
+            </form>
+
+        </div>
+
+    </div>
+
+
+    <div class="col-lg-7">
+
+        <div class="pki-card h-100">
+
+            <span class="section-label">
+                ISSUANCE FLOW
+            </span>
+
+            <h3 class="mt-2 mb-4">
+                Certificate Signing
+            </h3>
+
+
+            <div class="issuance-flow">
+
+                <div class="issuance-node">
+                    <small>TRUST ANCHOR</small>
+                    <strong>Root CA</strong>
+                    <span>
+                        Signs Intermediate CA
+                    </span>
+                </div>
+
+                <div class="issuance-arrow">
+                    ↓
+                </div>
+
+                <div class="issuance-node active">
+                    <small>ISSUER</small>
+                    <strong>Intermediate CA</strong>
+                    <span>
+                        Uses its private key to sign
+                    </span>
+                </div>
+
+                <div class="issuance-arrow">
+                    ↓
+                </div>
+
+                <div class="issuance-node">
+                    <small>END ENTITY</small>
+                    <strong>
+                        Server / User Certificate
+                    </strong>
+                    <span>
+                        CA = FALSE
+                    </span>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% if certificates %}
+
+<section class="mt-5">
+
+    <span class="section-label">
+        ISSUED CERTIFICATES
+    </span>
+
+    <h2 class="mt-2 mb-4">
+        Certificate Inventory
+    </h2>
+
+
+    <div class="table-responsive">
+
+        <table
+            class="table certificate-table align-middle"
+        >
+
+            <thead>
+                <tr>
+                    <th>Common Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                    <th>Status</th>
+                    <th></th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for cert in certificates %}
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            {{ cert.common_name }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        {{ cert.certificate_type }}
+                    </td>
+
+                    <td class="serial-cell">
+                        {{ cert.serial_number }}
+                    </td>
+
+                    <td>
+                        <span class="status-badge status-active">
+                            {{ cert.status }}
+                        </span>
+                    </td>
+
+                    <td class="text-end">
+
+                        <a
+                            href="{{ url_for(
+                                'main.certificate_details',
+                                certificate_id=cert.id
+                            ) }}"
+                            class="btn btn-sm btn-outline-dark"
+                        >
+                            Details
+                        </a>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}

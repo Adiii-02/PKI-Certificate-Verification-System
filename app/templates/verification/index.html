@@ -1,0 +1,431 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-heading">
+
+    <span class="section-label">
+        TRUST ENGINE
+    </span>
+
+    <h1>Verify Certificate</h1>
+
+    <p>
+        Follow the complete trust decision from X.509 parsing and
+        signature verification through the trusted Root and signed CRL.
+        Cryptographic validity and trust are reported separately.
+    </p>
+
+</div>
+
+
+{% if not certificates %}
+
+<div class="empty-state">
+
+    <div class="empty-icon">
+        CRT
+    </div>
+
+    <h3>
+        No certificates available
+    </h3>
+
+    <p>
+        Issue a server or user certificate before running
+        trust-chain verification.
+    </p>
+
+    <a
+        href="{{ url_for('main.issue_certificate') }}"
+        class="btn btn-primary"
+    >
+        Issue Certificate
+    </a>
+
+</div>
+
+{% else %}
+
+
+<div class="pki-card mb-4">
+
+    <span class="section-label">
+        CERTIFICATE INVENTORY
+    </span>
+
+    <h3 class="mt-2 mb-4">
+        Select a certificate
+    </h3>
+
+
+    <div class="table-responsive">
+
+        <table
+            class="table certificate-table align-middle"
+        >
+
+            <thead>
+
+                <tr>
+                    <th>Common Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                    <th>Database Status</th>
+                    <th>Action</th>
+                </tr>
+
+            </thead>
+
+
+            <tbody>
+
+                {% for cert in certificates %}
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            {{ cert.common_name }}
+                        </strong>
+                    </td>
+
+
+                    <td>
+                        {{ cert.certificate_type }}
+                    </td>
+
+
+                    <td class="serial-cell">
+                        {{ cert.serial_number }}
+                    </td>
+
+
+                    <td>
+
+                        {% if cert.status == "REVOKED" %}
+
+                        <span class="status-badge status-revoked">
+                            REVOKED
+                        </span>
+
+                        {% elif cert.status == "EXPIRED" %}
+
+                        <span class="status-badge status-pending">
+                            EXPIRED
+                        </span>
+
+                        {% else %}
+
+                        <span class="status-badge status-active">
+                            {{ cert.status }}
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+
+                    <td>
+
+                        <form
+                            method="POST"
+                            action="{{ url_for(
+                                'main.run_verification',
+                                certificate_id=cert.id
+                            ) }}"
+                        >
+
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-primary"
+                            >
+                                Verify
+                            </button>
+
+                        </form>
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% if result %}
+
+<section class="verification-result mt-5">
+
+
+    <div class="result-header">
+
+        <div>
+
+            <span class="section-label">
+                VERIFICATION RESULT
+            </span>
+
+            <h2 class="mt-2 mb-1">
+                {{ certificate.common_name }}
+            </h2>
+
+            <p>
+                Serial:
+                {{ certificate.serial_number }}
+            </p>
+
+        </div>
+
+
+        <span
+            class="final-result
+            {% if result.final_result == 'TRUSTED' %}
+                final-trusted
+            {% elif result.final_result == 'UNTRUSTED'
+                or result.final_result == 'NOT_YET_VALID'
+                or result.final_result == 'INCOMPLETE_CHAIN' %}
+                final-warning
+            {% else %}
+                final-failed
+            {% endif %}"
+        >
+            {{ result.final_result }}
+        </span>
+
+    </div>
+
+
+    <div class="trust-summary">
+
+
+        <div>
+
+            <span>
+                Cryptographically Valid
+            </span>
+
+            <strong
+                class="
+                {% if result.cryptographically_valid %}
+                    text-success
+                {% else %}
+                    text-danger
+                {% endif %}
+                "
+            >
+
+                {% if result.cryptographically_valid %}
+                    YES
+                {% else %}
+                    NO
+                {% endif %}
+
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Trusted
+            </span>
+
+            <strong
+                class="
+                {% if result.trusted %}
+                    text-success
+                {% else %}
+                    text-danger
+                {% endif %}
+                "
+            >
+
+                {% if result.trusted %}
+                    YES
+                {% else %}
+                    NO
+                {% endif %}
+
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Failed Check
+            </span>
+
+            <strong>
+                {{ result.failed_check or "None" }}
+            </strong>
+
+        </div>
+
+
+    </div>
+
+
+    <div class="pki-card mt-4">
+
+        <span class="section-label">
+            VERIFICATION PROCESS
+        </span>
+
+        <h3 class="mt-2 mb-2">
+            Certificate Trust Chain
+        </h3>
+
+        <p class="text-secondary mb-4">
+            Every stage below is evaluated by the Python
+            cryptographic verification engine.
+        </p>
+
+
+        <div class="verification-timeline">
+
+            {% for check in result.checks %}
+
+            <div
+                class="verification-check
+                {% if check.passed %}
+                    check-pass
+                {% else %}
+                    check-fail
+                {% endif %}"
+            >
+
+
+                <div class="check-icon">
+
+                    {% if check.passed %}
+                        ✓
+                    {% else %}
+                        ✕
+                    {% endif %}
+
+                </div>
+
+
+                <div class="check-content">
+
+
+                    <div class="check-heading">
+
+                        <strong>
+                            {{ check.name }}
+                        </strong>
+
+                        <span>
+                            {% if check.passed %}
+                                PASS
+                            {% else %}
+                                FAIL
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+
+                    <p>
+                        {{ check.explanation }}
+                    </p>
+
+
+                    {% if check.evidence %}
+
+                    <div class="check-evidence">
+                        {{ check.evidence }}
+                    </div>
+
+                    {% endif %}
+
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="final-decision
+        {% if result.final_result == 'TRUSTED' %}
+            decision-success
+        {% elif result.final_result == 'UNTRUSTED'
+            or result.final_result == 'NOT_YET_VALID'
+            or result.final_result == 'INCOMPLETE_CHAIN' %}
+            decision-warning
+        {% else %}
+            decision-failure
+        {% endif %}"
+    >
+
+        <span>
+            FINAL DECISION
+        </span>
+
+        <strong>
+            {{ result.final_result }}
+        </strong>
+
+        <p>
+            {{ result.reason }}
+        </p>
+
+    </div>
+
+
+    {% if result.final_result == "REVOKED" %}
+
+    <div class="alert alert-light border mt-4">
+
+        <strong>
+            Important:
+        </strong>
+
+        The certificate's cryptographic signatures can still be
+        completely valid even though the issuing CA has revoked it.
+        The signed CRL causes the final trust decision to become
+        REVOKED.
+
+    </div>
+
+    {% elif result.final_result == "UNTRUSTED" %}
+
+    <div class="alert alert-light border mt-4">
+
+        <strong>
+            Important:
+        </strong>
+
+        The certificate chain can be cryptographically valid while
+        still being untrusted. Trust requires the Root CA to exist
+        in the application's trusted-root store.
+
+    </div>
+
+    {% endif %}
+
+
+</section>
+
+{% endif %}
+
+{% endblock %}

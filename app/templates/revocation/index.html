@@ -1,0 +1,339 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-heading">
+
+    <span class="section-label">
+        CERTIFICATE LIFECYCLE
+    </span>
+
+    <h1>Revoke Certificate</h1>
+
+    <p>
+        Revoke an issued certificate, record the reason and
+        publish the serial number in an Intermediate-CA-signed
+        X.509 Certificate Revocation List.
+    </p>
+
+</div>
+
+
+<div class="process-flow mb-4">
+
+    <div class="flow-item">
+        <strong>TRUSTED</strong>
+        <span>Certificate is valid</span>
+    </div>
+
+    <div class="flow-arrow">→</div>
+
+    <div class="flow-item">
+        <strong>REVOKE</strong>
+        <span>Record serial and reason</span>
+    </div>
+
+    <div class="flow-arrow">→</div>
+
+    <div class="flow-item">
+        <strong>SIGNED CRL</strong>
+        <span>Intermediate CA publishes CRL</span>
+    </div>
+
+    <div class="flow-arrow">→</div>
+
+    <div class="flow-item">
+        <strong>VERIFY AGAIN</strong>
+        <span>Same trust engine checks CRL</span>
+    </div>
+
+    <div class="flow-arrow">→</div>
+
+    <div class="flow-item">
+        <strong>REVOKED</strong>
+        <span>Certificate is rejected</span>
+    </div>
+
+</div>
+
+
+{% if certificates %}
+
+<div class="pki-card mb-4">
+
+    <span class="section-label">
+        CERTIFICATE INVENTORY
+    </span>
+
+    <h3 class="mt-2 mb-4">
+        Issued Certificates
+    </h3>
+
+
+    <div class="table-responsive">
+
+        <table class="table certificate-table align-middle">
+
+            <thead>
+                <tr>
+                    <th>Common Name</th>
+                    <th>Type</th>
+                    <th>Serial Number</th>
+                    <th>Status</th>
+                    <th>Action</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for cert in certificates %}
+
+                <tr>
+
+                    <td>
+                        <strong>
+                            {{ cert.common_name }}
+                        </strong>
+                    </td>
+
+                    <td>
+                        {{ cert.certificate_type }}
+                    </td>
+
+                    <td class="serial-cell">
+                        {{ cert.serial_number }}
+                    </td>
+
+                    <td>
+
+                        {% if cert.status == "REVOKED" %}
+
+                        <span class="status-badge status-revoked">
+                            REVOKED
+                        </span>
+
+                        {% else %}
+
+                        <span class="status-badge status-active">
+                            {{ cert.status }}
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+                    <td>
+
+                        {% if cert.status != "REVOKED" %}
+
+                        <form
+                            method="POST"
+                            action="{{ url_for(
+                                'main.run_revocation',
+                                certificate_id=cert.id
+                            ) }}"
+                            class="d-flex gap-2"
+                        >
+
+                            <select
+                                name="reason"
+                                class="form-select form-select-sm"
+                                required
+                            >
+                                <option value="UNSPECIFIED">
+                                    Unspecified
+                                </option>
+
+                                <option value="KEY_COMPROMISE">
+                                    Key Compromise
+                                </option>
+
+                                <option value="AFFILIATION_CHANGED">
+                                    Affiliation Changed
+                                </option>
+
+                                <option value="SUPERSEDED">
+                                    Superseded
+                                </option>
+
+                                <option value="CESSATION_OF_OPERATION">
+                                    Cessation of Operation
+                                </option>
+
+                                <option value="CERTIFICATE_HOLD">
+                                    Certificate Hold
+                                </option>
+
+                                <option value="PRIVILEGE_WITHDRAWN">
+                                    Privilege Withdrawn
+                                </option>
+                            </select>
+
+                            <button
+                                type="submit"
+                                class="btn btn-sm btn-danger"
+                                onclick="return confirm(
+                                    'Revoke this certificate?'
+                                );"
+                            >
+                                Revoke
+                            </button>
+
+                        </form>
+
+                        {% else %}
+
+                        <span class="text-secondary small">
+                            Already revoked
+                        </span>
+
+                        {% endif %}
+
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% else %}
+
+<div class="empty-state">
+    <h3>No certificates available</h3>
+
+    <p>
+        Issue a certificate before testing revocation.
+    </p>
+</div>
+
+{% endif %}
+
+
+{% if crl_details %}
+
+<div class="pki-card mb-4">
+
+    <span class="section-label">
+        SIGNED X.509 CRL
+    </span>
+
+    <h3 class="mt-2 mb-4">
+        Current Certificate Revocation List
+    </h3>
+
+
+    <div class="certificate-details">
+
+        <div class="detail-wide">
+            <span>Issuer</span>
+            <strong class="break-value">
+                {{ crl_details.issuer }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Signature Algorithm</span>
+            <strong>
+                {{ crl_details.signature_algorithm }}
+                with RSA
+            </strong>
+        </div>
+
+        <div>
+            <span>Revoked Certificates</span>
+            <strong>
+                {{ crl_details.revoked_count }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Last Update</span>
+            <strong>
+                {{ crl_details.last_update }}
+            </strong>
+        </div>
+
+        <div>
+            <span>Next Update</span>
+            <strong>
+                {{ crl_details.next_update }}
+            </strong>
+        </div>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+{% if revocations %}
+
+<div class="pki-card">
+
+    <span class="section-label">
+        REVOCATION RECORDS
+    </span>
+
+    <h3 class="mt-2 mb-4">
+        Certificates Published in CRL
+    </h3>
+
+
+    <div class="table-responsive">
+
+        <table class="table certificate-table align-middle">
+
+            <thead>
+                <tr>
+                    <th>Certificate</th>
+                    <th>Serial Number</th>
+                    <th>Reason</th>
+                    <th>Revocation Date</th>
+                </tr>
+            </thead>
+
+            <tbody>
+
+                {% for item in revocations %}
+
+                <tr>
+
+                    <td>
+                        {{ item.common_name }}
+                    </td>
+
+                    <td class="serial-cell">
+                        {{ item.serial_number }}
+                    </td>
+
+                    <td>
+                        {{ item.reason }}
+                    </td>
+
+                    <td>
+                        {{ item.revocation_date }}
+                    </td>
+
+                </tr>
+
+                {% endfor %}
+
+            </tbody>
+
+        </table>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+{% endblock %}

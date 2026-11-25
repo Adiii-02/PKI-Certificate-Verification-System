@@ -1,0 +1,57 @@
+# Environment variables
+.env
+
+# Python virtual environment
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Testing
+.pytest_cache/
+.coverage
+htmlcov/
+
+# IDE
+.vscode/
+.idea/
+
+# Operating system files
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+
+# Generated Root CA material
+storage/root_ca/*
+
+# Generated Intermediate CA material
+storage/intermediate_ca/*
+
+# Issued certificates
+storage/issued/certificates/*
+
+# Private keys
+storage/private_keys/*
+
+# Certificate Revocation Lists
+storage/crl/*
+
+# Trusted Root store
+storage/trusted_roots/*
+
+# Security Test Lab certificates and keys
+storage/security_tests/*
+
+# Keep storage directories in Git
+!storage/root_ca/.gitkeep
+!storage/intermediate_ca/.gitkeep
+!storage/issued/certificates/.gitkeep
+!storage/private_keys/.gitkeep
+!storage/crl/.gitkeep
+!storage/trusted_roots/.gitkeep
+!storage/security_tests/.gitkeep

@@ -1,0 +1,408 @@
+{% extends "base.html" %}
+
+{% block content %}
+
+<div class="page-heading">
+
+    <span class="section-label">
+        CONTROLLED PKI FAILURES
+    </span>
+
+    <h1>Security Test Lab</h1>
+
+    <p>
+        Real X.509 certificates are passed through the same
+        verification engine used by normal application certificates.
+        No scenario result is hard-coded.
+    </p>
+
+</div>
+
+
+<div class="lab-explanation mb-4">
+
+    <div>
+        <strong>Same Verification Engine</strong>
+
+        <span>
+            Normal and test certificates follow identical
+            cryptographic verification logic.
+        </span>
+    </div>
+
+    <div>
+        <strong>Real X.509 Data</strong>
+
+        <span>
+            Dates, signatures, issuers and trust relationships
+            exist inside actual certificates.
+        </span>
+    </div>
+
+    <div>
+        <strong>Explainable Failure</strong>
+
+        <span>
+            Every rejected certificate shows the exact check
+            that failed.
+        </span>
+    </div>
+
+</div>
+
+
+{% set generated_count =
+    scenarios
+    | selectattr("generated")
+    | list
+    | length
+%}
+
+
+{% if generated_count < 7 %}
+
+<div class="pki-card mb-4">
+
+    <div class="d-flex flex-column flex-md-row
+                justify-content-between
+                align-items-md-center gap-3">
+
+        <div>
+
+            <span class="section-label">
+                TEST CERTIFICATES
+            </span>
+
+            <h4 class="mt-2 mb-1">
+                Generate controlled scenarios
+            </h4>
+
+            <p class="text-secondary mb-0">
+                Generates real certificates for the controlled
+                Security Lab tests.
+            </p>
+
+        </div>
+
+
+        <form
+            method="POST"
+            action="{{ url_for(
+                'main.generate_security_lab'
+            ) }}"
+        >
+
+            <button
+                type="submit"
+                class="btn btn-primary"
+            >
+                Generate Test Certificates
+            </button>
+
+        </form>
+
+    </div>
+
+</div>
+
+{% endif %}
+
+
+<div class="row g-3">
+
+    {% for scenario in scenarios %}
+
+    <div class="col-md-6 col-xl-3">
+
+        <div
+            class="scenario-card
+            scenario-{{ scenario.category }}
+            h-100"
+        >
+
+            <div class="d-flex justify-content-between">
+
+                <span class="scenario-number">
+                    {{ "%02d"|format(loop.index) }}
+                </span>
+
+
+                {% if scenario.generated %}
+
+                <span class="mini-status active">
+                    READY
+                </span>
+
+                {% else %}
+
+                <span class="mini-status warning">
+                    UNAVAILABLE
+                </span>
+
+                {% endif %}
+
+            </div>
+
+
+            <h5>
+                {{ scenario.short_title }}
+            </h5>
+
+            <p>
+                {{ scenario.description }}
+            </p>
+
+
+            {% if scenario.generated %}
+
+            <form
+                method="POST"
+                action="{{ url_for(
+                    'main.run_security_scenario',
+                    scenario_id=scenario.id
+                ) }}"
+            >
+
+                <button
+                    type="submit"
+                    class="btn btn-sm btn-outline-dark"
+                >
+                    Run Verification
+                </button>
+
+            </form>
+
+            {% elif scenario.id == "revoked" %}
+
+            <a
+                href="{{ url_for('main.revoke_certificate') }}"
+                class="btn btn-sm btn-outline-danger"
+            >
+                Revoke a Certificate
+            </a>
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+    {% endfor %}
+
+</div>
+
+
+{% if result and selected_scenario %}
+
+<section class="verification-result mt-5">
+
+    <div class="result-header">
+
+        <div>
+
+            <span class="section-label">
+                SECURITY LAB RESULT
+            </span>
+
+            <h2 class="mt-2 mb-1">
+                {{ selected_scenario.title }}
+            </h2>
+
+            <p>
+                {{ selected_scenario.description }}
+            </p>
+
+        </div>
+
+
+        <span
+            class="final-result
+            {% if display_result == 'TRUSTED' %}
+                final-trusted
+            {% elif display_result == 'UNTRUSTED'
+                or display_result == 'NOT_YET_VALID'
+                or display_result == 'INCOMPLETE_CHAIN' %}
+                final-warning
+            {% else %}
+                final-failed
+            {% endif %}"
+        >
+            {{ display_result }}
+        </span>
+
+    </div>
+
+
+    <div class="trust-summary">
+
+        <div>
+
+            <span>
+                Cryptographically Valid
+            </span>
+
+            <strong
+                class="{% if result.cryptographically_valid %}
+                    text-success
+                {% else %}
+                    text-danger
+                {% endif %}"
+            >
+                {% if result.cryptographically_valid %}
+                    YES
+                {% else %}
+                    NO
+                {% endif %}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Trusted
+            </span>
+
+            <strong
+                class="{% if result.trusted %}
+                    text-success
+                {% else %}
+                    text-danger
+                {% endif %}"
+            >
+                {% if result.trusted %}
+                    YES
+                {% else %}
+                    NO
+                {% endif %}
+            </strong>
+
+        </div>
+
+
+        <div>
+
+            <span>
+                Failed Check
+            </span>
+
+            <strong>
+                {{ result.failed_check or "None" }}
+            </strong>
+
+        </div>
+
+    </div>
+
+
+    <div class="pki-card mt-4">
+
+        <span class="section-label">
+            VERIFICATION PROCESS
+        </span>
+
+        <h3 class="mt-2 mb-4">
+            Certificate → Checks → Decision
+        </h3>
+
+
+        <div class="verification-timeline">
+
+            {% for check in result.checks %}
+
+            <div
+                class="verification-check
+                {% if check.passed %}
+                    check-pass
+                {% else %}
+                    check-fail
+                {% endif %}"
+            >
+
+                <div class="check-icon">
+
+                    {% if check.passed %}
+                        ✓
+                    {% else %}
+                        ✕
+                    {% endif %}
+
+                </div>
+
+
+                <div class="check-content">
+
+                    <div class="check-heading">
+
+                        <strong>
+                            {{ check.name }}
+                        </strong>
+
+                        <span>
+                            {% if check.passed %}
+                                PASS
+                            {% else %}
+                                FAIL
+                            {% endif %}
+                        </span>
+
+                    </div>
+
+
+                    <p>
+                        {{ check.explanation }}
+                    </p>
+
+
+                    {% if check.evidence %}
+
+                    <div class="check-evidence">
+                        {{ check.evidence }}
+                    </div>
+
+                    {% endif %}
+
+                </div>
+
+            </div>
+
+            {% endfor %}
+
+        </div>
+
+    </div>
+
+
+    <div
+        class="final-decision
+        {% if display_result == 'TRUSTED' %}
+            decision-success
+        {% elif display_result == 'UNTRUSTED'
+            or display_result == 'NOT_YET_VALID'
+            or display_result == 'INCOMPLETE_CHAIN' %}
+            decision-warning
+        {% else %}
+            decision-failure
+        {% endif %}"
+    >
+
+        <span>
+            FINAL DECISION
+        </span>
+
+        <strong>
+            {{ display_result }}
+        </strong>
+
+        <p>
+            {{ result.reason }}
+        </p>
+
+    </div>
+
+</section>
+
+{% endif %}
+
+{% endblock %}
