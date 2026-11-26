@@ -10,13 +10,16 @@ from app.db import (
 from app.services.certificate_service import (
     get_certificate_by_id,
 )
+from app.services.openssl_service import (
+    cross_validate_certificate,
+)
 
 
 def save_verification_history(
     certificate_record,
     result,
 ):
-    """Store a verification result in MySQL."""
+    """Store the Python verification result in MySQL."""
 
     connection = None
     cursor = None
@@ -86,8 +89,8 @@ def verify_issued_certificate(
     certificate_id,
 ):
     """
-    Verify an issued certificate using the real
-    cryptographic verification engine.
+    Verify an issued certificate using the Python engine,
+    then independently cross-check the result with OpenSSL.
     """
 
     certificate_record = (
@@ -112,4 +115,32 @@ def verify_issued_certificate(
         result,
     )
 
-    return certificate_record, result
+    try:
+        openssl_result = (
+            cross_validate_certificate(
+                certificate_path=certificate_record[
+                    "certificate_path"
+                ],
+                application_result=result[
+                    "final_result"
+                ],
+            )
+        )
+
+    except Exception as exc:
+        openssl_result = {
+            "application_result": result[
+                "final_result"
+            ],
+            "openssl_result": "ERROR",
+            "comparison": "UNAVAILABLE",
+            "mode": "N/A",
+            "return_code": None,
+            "output": str(exc),
+        }
+
+    return (
+        certificate_record,
+        result,
+        openssl_result,
+    )

@@ -429,3 +429,95 @@
 {% endif %}
 
 {% endblock %}
+
+{% if openssl_result %}
+
+<div class="pki-card mt-4">
+
+    <span class="section-label">
+        INDEPENDENT CROSS-VALIDATION
+    </span>
+
+    <h3 class="mt-2 mb-2">
+        Application vs OpenSSL
+    </h3>
+
+    <p class="text-secondary mb-4">
+        The Python verification engine makes the application's
+        trust decision. OpenSSL is used independently as supporting
+        verification evidence.
+    </p>
+
+
+    <div class="openssl-comparison">
+
+        <div>
+
+            <span>
+                Application Result
+            </span>
+
+            <strong>
+                {{ openssl_result.application_result }}
+            </strong>
+
+            <small>
+                Python cryptography engine
+            </small>
+
+        </div>
+
+
+        <div class="comparison-symbol">
+            VS
+        </div>
+
+
+        <div>
+
+            <span>
+                OpenSSL Result
+            </span>
+
+            <strong>
+                {{ openssl_result.openssl_result }}
+            </strong>
+
+            <small>
+                {{ openssl_result.mode }}
+            </small>
+
+        </div>
+
+
+        <div
+            class="comparison-result
+            {% if openssl_result.comparison == 'MATCH' %}
+                comparison-match
+            {% elif openssl_result.comparison == 'MISMATCH' %}
+                comparison-mismatch
+            {% else %}
+                comparison-unavailable
+            {% endif %}"
+        >
+
+            {{ openssl_result.comparison }}
+
+        </div>
+
+    </div>
+
+
+    <div class="openssl-evidence mt-4">
+
+        <span>
+            OpenSSL Evidence
+        </span>
+
+        <pre>{{ openssl_result.output }}</pre>
+
+    </div>
+
+</div>
+
+{% endif %}

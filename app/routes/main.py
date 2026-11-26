@@ -321,6 +321,7 @@ def verify_certificate():
         certificates=certificates,
         result=None,
         certificate=None,
+        openssl_result=None,
     )
 
 
@@ -332,10 +333,12 @@ def run_verification(
     certificate_id,
 ):
     try:
-        certificate, result = (
-            verify_issued_certificate(
-                certificate_id
-            )
+        (
+            certificate,
+            result,
+            openssl_result,
+        ) = verify_issued_certificate(
+            certificate_id
         )
 
     except ValueError as exc:
@@ -370,6 +373,7 @@ def run_verification(
         certificates=certificates,
         result=result,
         certificate=certificate,
+        openssl_result=openssl_result,
     )
 
 
